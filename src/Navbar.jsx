@@ -12,7 +12,7 @@ const Navbar = () => {
     }}>
       <Link style={linkStyle} to="/">Home</Link>
       <Link style={linkStyle} to="/register">Register</Link>
-      <Link style={linkStyle} to="/health">Health Data</Link>
+      <Link style={linkStyle} to="/add-health">Health Data</Link>
       <Link style={linkStyle} to="/alerts">Alerts</Link>
     </div>
   );

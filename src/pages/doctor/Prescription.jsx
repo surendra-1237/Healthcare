@@ -2,15 +2,18 @@ import { useEffect, useState } from "react";
 import API from "../../Api";
 
 const Prescription = () => {
-  const [form, setForm] = useState({ patientId: "", patientName: "", diagnosis: "", medicines: "" });
+  const [form, setForm] = useState({ patientId: "", patientName: "", doctorId: "", doctorName: "", diagnosis: "", medicines: "" });
   const [patients, setPatients] = useState([]);
+  const [doctors, setDoctors] = useState([]);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await API.get("/patients");
-        setPatients(res.data || []);
+        const pRes = await API.get("/patients");
+        const dRes = await API.get("/doctors");
+        setPatients(pRes.data || []);
+        setDoctors(dRes.data || []);
       } catch (e) {
         console.log("Error");
       }
@@ -20,19 +23,28 @@ const Prescription = () => {
 
   const handleChange = e => {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-    if (name === "patientId") {
-      const patient = patients.find(p => p._id === value);
-      if (patient) setForm(f => ({ ...f, patientName: patient.name }));
-    }
+    setForm(prev => {
+      let updated = { ...prev, [name]: value };
+      if (name === "patientId") {
+        const patient = patients.find(p => p._id === value);
+        if (patient) updated.patientName = patient.name;
+        else updated.patientName = "";
+      }
+      if (name === "doctorId") {
+        const doctor = doctors.find(d => d._id === value);
+        if (doctor) updated.doctorName = doctor.name;
+        else updated.doctorName = "";
+      }
+      return updated;
+    });
   };
 
-  const save = () => {
-    if (!form.patientId || !form.diagnosis || !form.medicines) {
-      alert("Fill all fields");
+  const handleDownload = () => {
+    if (!form.doctorId || !form.doctorName || !form.patientId || !form.patientName || !form.diagnosis || !form.medicines) {
+      alert("Fill all required fields");
       return;
     }
-    const content = `PRESCRIPTION\n${"=".repeat(40)}\nDate: ${new Date().toLocaleDateString()}\nPatient: ${form.patientName}\nPatient ID: ${form.patientId}\n\nDIAGNOSIS:\n${form.diagnosis}\n\nMEDICINES:\n${form.medicines}\n${"=".repeat(40)}`;
+    const content = `PRESCRIPTION\n${"=".repeat(50)}\nDate: ${new Date().toLocaleDateString()}\nTime: ${new Date().toLocaleTimeString()}\n\nDOCTOR: ${form.doctorName}\n\nPATIENT: ${form.patientName}\nPatient ID: ${form.patientId}\n\nDIAGNOSIS:\n${form.diagnosis}\n\nMEDICINES & DOSAGE:\n${form.medicines}\n${"=".repeat(50)}\nDoctor Signature: _________________`;
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -55,14 +67,26 @@ const Prescription = () => {
         {saved && <div style={successMsg}>✓ Prescription saved and downloaded!</div>}
 
         <div style={formStyle}>
-          <div style={formGroup}>
-            <label style={label}>Select Patient</label>
-            <select name="patientId" value={form.patientId} onChange={handleChange} style={input}>
-              <option value="">Choose patient</option>
-              {patients.map(p => (
-                <option key={p._id} value={p._id}>{p.name}</option>
-              ))}
-            </select>
+          <div style={twoColForm}>
+            <div style={formGroup}>
+              <label style={label}>Select Doctor</label>
+              <select name="doctorId" value={form.doctorId} onChange={handleChange} style={input}>
+                <option value="">Choose doctor</option>
+                {doctors.map(d => (
+                  <option key={d._id} value={d._id}>{d.name} - {d.specialty}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={formGroup}>
+              <label style={label}>Select Patient</label>
+              <select name="patientId" value={form.patientId} onChange={handleChange} style={input}>
+                <option value="">Choose patient</option>
+                {patients.map(p => (
+                  <option key={p._id} value={p._id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div style={formGroup}>
@@ -72,12 +96,10 @@ const Prescription = () => {
 
           <div style={formGroup}>
             <label style={label}>Medicines & Dosage</label>
-            <textarea name="medicines" placeholder="Enter medicines with dosage details..." value={form.medicines} onChange={handleChange} style={{...textarea, height: "150px"}} />
+            <textarea name="medicines" placeholder="Enter medicines and dosage..." value={form.medicines} onChange={handleChange} style={{...textarea, height: "100px"}} />
           </div>
 
-          <div style={{display: "flex", gap: "10px"}}>
-            <button onClick={save} style={button}>💾 Save & Download</button>
-          </div>
+          <button type="button" style={button} onClick={handleDownload}>Download Prescription</button>
         </div>
       </div>
     </div>
@@ -91,6 +113,7 @@ const title = { margin: 0, fontSize: "24px", fontWeight: "bold" };
 const subtitle = { margin: "8px 0 0 0", opacity: 0.9, fontSize: "14px" };
 const formStyle = { padding: "30px" };
 const formGroup = { marginBottom: "20px" };
+const twoColForm = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" };
 const label = { display: "block", marginBottom: "8px", fontWeight: "600", color: "#333", fontSize: "14px" };
 const input = { width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "14px", boxSizing: "border-box" };
 const textarea = { width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "14px", boxSizing: "border-box", fontFamily: "inherit" };
